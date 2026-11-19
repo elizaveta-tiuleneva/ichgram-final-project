@@ -1,0 +1,34 @@
+
+{
+  "compilerOptions": {
+    /* ---------- Базовые настройки ---------- */
+    "target": "ES2022", // Версия JavaScript, в которую компилируется TS (Node.js 18+)
+    "module": "NodeNext", // Система модулей для Node.js (ESM)
+    "moduleResolution": "NodeNext", // Правила поиска модулей в Node.js
+    "types": ["node"], // Типы Node.js
+    "lib": ["ES2022"], // Стандартные возможности JavaScript
+
+    /* ---------- Пути и структура ---------- */
+    "rootDir": "./src", // Папка с исходным TypeScript-кодом
+    "outDir": "./dist", // Папка для скомпилированного JavaScript
+
+    /* ---------- Поддержка совместимости ---------- */
+    "esModuleInterop": true, // Совместимость ES-модулей и CommonJS
+    "allowSyntheticDefaultImports": true, // Поддержка default-импортов
+    "resolveJsonModule": true, // Возможность импортировать JSON
+
+    /* ---------- Проверка и строгий режим ---------- */
+    "strict": true, // Строгая проверка типов
+    "forceConsistentCasingInFileNames": true, // Проверка регистра имён файлов
+    "skipLibCheck": true, // Пропуск проверки типов библиотек
+
+    /* ---------- Генерация и отладка ---------- */
+    "sourceMap": true, // Создание карт исходного кода для отладки
+    "inlineSources": true, // Включение исходного TS в source maps
+    "noEmitOnError": true // Не создавать JS при ошибках компиляции
+  },
+
+  /* ---------- Какие файлы учитывать ---------- */
+  "include": ["src/**/*.ts"], // Все TypeScript-файлы в src
+  "exclude": ["node_modules", "dist"] // Исключаем зависимости и сборку
+}
