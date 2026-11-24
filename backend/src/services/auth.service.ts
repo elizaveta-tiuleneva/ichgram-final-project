@@ -10,7 +10,7 @@ interface RegisterData {
 }
 
 interface LoginData {
-  email: string;
+  identifier: string;
   password: string;
 }
 
@@ -34,12 +34,16 @@ export const registerUser = async (data: RegisterData) => {
   const email = data.email.trim().toLowerCase();
   const fullName = data.fullName.trim();
 
-  const existingUser = await User.findOne({
-    $or: [{ email }, { username }]
-  });
+  const existingEmail = await User.findOne({ email });
 
-  if (existingUser) {
-    throw new Error("Email or username already exists");
+  if (existingEmail) {
+    throw new Error("This email is already registered.");
+  }
+
+  const existingUsername = await User.findOne({ username });
+
+  if (existingUsername) {
+    throw new Error("This username is already taken.");
   }
 
   const hashedPassword = await bcrypt.hash(data.password, 12);
@@ -67,12 +71,17 @@ export const registerUser = async (data: RegisterData) => {
 
 // Авторизация пользователя
 export const loginUser = async (data: LoginData) => {
-  const email = data.email.trim().toLowerCase();
+  const identifier = data.identifier.trim().toLowerCase();
 
-  const user = await User.findOne({ email }).select("+password");
+  const user = await User.findOne({
+    $or: [
+      { email: identifier },
+      { username: identifier }
+    ]
+  }).select("+password");
 
   if (!user) {
-    throw new Error("Invalid email or password");
+    throw new Error("Invalid username, email or password");
   }
 
   const isPasswordValid = await bcrypt.compare(
@@ -81,7 +90,7 @@ export const loginUser = async (data: LoginData) => {
   );
 
   if (!isPasswordValid) {
-    throw new Error("Invalid email or password");
+    throw new Error("Invalid username, email or password");
   }
 
   const token = generateToken(String(user._id));

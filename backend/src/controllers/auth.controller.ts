@@ -18,7 +18,8 @@ export const register = async (
       typeof password !== "string" ||
       !username.trim() ||
       !fullName.trim() ||
-      !email.trim()
+      !email.trim() ||
+      !password
     ) {
       res.status(400).json({
         message: "All fields are required"
@@ -28,6 +29,7 @@ export const register = async (
 
     if (!/^[a-zA-Z0-9._]{3,30}$/.test(username.trim())) {
       res.status(400).json({
+        field: "username",
         message: "Invalid username"
       });
       return;
@@ -35,13 +37,18 @@ export const register = async (
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       res.status(400).json({
+        field: "email",
         message: "Invalid email address"
       });
       return;
     }
 
-    if (password.length < 8 || Buffer.byteLength(password, "utf8") > 72) {
+    if (
+      password.length < 8 ||
+      Buffer.byteLength(password, "utf8") > 72
+    ) {
       res.status(400).json({
+        field: "password",
         message: "Password must contain at least 8 characters and no more than 72 bytes"
       });
       return;
@@ -56,14 +63,50 @@ export const register = async (
 
     res.status(201).json(result);
   } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === "This email is already registered.") {
+        res.status(409).json({
+          field: "email",
+          message: error.message
+        });
+        return;
+      }
+
+      if (error.message === "This username is already taken.") {
+        res.status(409).json({
+          field: "username",
+          message: error.message
+        });
+        return;
+      }
+    }
+
     if (
-      (error instanceof Error &&
-        error.message === "Email or username already exists") ||
-      (typeof error === "object" &&
-        error !== null &&
-        "code" in error &&
-        error.code === 11000)
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === 11000
     ) {
+      const duplicateError = error as {
+        keyPattern?: Record<string, number>;
+      };
+
+      if (duplicateError.keyPattern?.username) {
+        res.status(409).json({
+          field: "username",
+          message: "This username is already taken."
+        });
+        return;
+      }
+
+      if (duplicateError.keyPattern?.email) {
+        res.status(409).json({
+          field: "email",
+          message: "This email is already registered."
+        });
+        return;
+      }
+
       res.status(409).json({
         message: "Email or username already exists"
       });
@@ -84,31 +127,36 @@ export const login = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { email, password } = req.body ?? {};
+    const { identifier, email, password } = req.body ?? {};
+
+    const loginIdentifier = identifier ?? email;
 
     if (
-      typeof email !== "string" ||
+      typeof loginIdentifier !== "string" ||
       typeof password !== "string" ||
-      !email.trim() ||
+      !loginIdentifier.trim() ||
       !password ||
       Buffer.byteLength(password, "utf8") > 72
     ) {
       res.status(400).json({
-        message: "Valid email and password are required"
+        message: "Username or email and password are required"
       });
       return;
     }
 
-    const result = await loginUser({ email, password });
+    const result = await loginUser({
+      identifier: loginIdentifier,
+      password
+    });
 
     res.status(200).json(result);
   } catch (error) {
     if (
       error instanceof Error &&
-      error.message === "Invalid email or password"
+      error.message === "Invalid username, email or password"
     ) {
       res.status(401).json({
-        message: "Invalid email or password"
+        message: error.message
       });
       return;
     }
@@ -120,7 +168,6 @@ export const login = async (
     });
   }
 };
-
 
 // Получение текущего пользователя
 export const getMe = async (
@@ -135,7 +182,8 @@ export const getMe = async (
       return;
     }
 
-    const user = await User.findById(req.userId).select("-password -__v");
+    const user = await User.findById(req.userId)
+      .select("-password -__v");
 
     if (!user) {
       res.status(404).json({
@@ -153,4 +201,3 @@ export const getMe = async (
     });
   }
 };
-
