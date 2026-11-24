@@ -1,5 +1,7 @@
 import type { Request, Response } from "express";
 import { registerUser, loginUser } from "../services/auth.service.js";
+import User from "../models/User.js";
+import type { AuthRequest } from "../middleware/auth.middleware.js";
 
 // Регистрация
 export const register = async (
@@ -118,3 +120,37 @@ export const login = async (
     });
   }
 };
+
+
+// Получение текущего пользователя
+export const getMe = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.userId) {
+      res.status(401).json({
+        message: "Unauthorized"
+      });
+      return;
+    }
+
+    const user = await User.findById(req.userId).select("-password -__v");
+
+    if (!user) {
+      res.status(404).json({
+        message: "User not found"
+      });
+      return;
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Internal server error"
+    });
+  }
+};
+

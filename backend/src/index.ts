@@ -1,23 +1,24 @@
-
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import { connectDB } from "./config/database.js";
+import authRoutes from "./routes/auth.routes.js";
 
-dotenv.config(); // Загружаем переменные окружения
+dotenv.config();
 
-const app = express(); // Создаём Express-приложение
-const PORT = Number(process.env.PORT) || 5000; // Порт сервера
+const app = express();
+const PORT = Number(process.env.PORT) || 5000;
 
-app.use(cors()); // Разрешаем запросы от Frontend
-app.use(express.json()); // Обрабатываем JSON-запросы
+app.use(cors());
+app.use(express.json());
 
-// Главная страница API
+// Маршруты API
+app.use("/api/auth", authRoutes);
+
 app.get("/", (_req, res) => {
   res.json({ message: "Welcome to ICHgram API" });
 });
 
-// Проверка работы сервера
 app.get("/api/health", (_req, res) => {
   res.status(200).json({
     status: "ok",
@@ -25,7 +26,7 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
-// Подключение к базе данных и запуск сервера
+// Запуск сервера после подключения к MongoDB
 const startServer = async (): Promise<void> => {
   await connectDB();
 
