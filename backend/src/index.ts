@@ -2,6 +2,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import { connectDB } from "./config/database.js";
 
 dotenv.config(); // Загружаем переменные окружения
 
@@ -24,7 +25,13 @@ app.get("/api/health", (_req, res) => {
   });
 });
 
-// Запуск сервера
-app.listen(PORT, () => {
-  console.log(`ICHgram API running on http://localhost:${PORT}`);
-});
+// Подключение к базе данных и запуск сервера
+const startServer = async (): Promise<void> => {
+  await connectDB();
+
+  app.listen(PORT, () => {
+    console.log(`ICHgram API running on http://localhost:${PORT}`);
+  });
+};
+
+startServer();

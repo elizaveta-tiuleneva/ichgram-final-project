@@ -1,0 +1,14 @@
+services:
+  mongodb:
+    image: mongo:8.0 # Образ MongoDB
+    container_name: ichgram-mongodb # Название контейнера
+    restart: unless-stopped # Автоматический перезапуск
+
+    ports:
+      - "127.0.0.1:27018:27017" # Локальный порт и порт контейнера
+
+    volumes:
+      - mongodb_data:/data/db # Хранение данных MongoDB
+
+volumes:
+  mongodb_data: # Постоянное хранилище данных
