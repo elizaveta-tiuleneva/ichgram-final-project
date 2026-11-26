@@ -1,23 +1,34 @@
-import api from './api.js';
+import api from "./api.js";
+
+import {
+  getActiveAccountId,
+  removeAccount,
+} from "../utils/accountStorage.js";
 
 export const registerUser = async (userData) => {
-  const response = await api.post('/auth/register', userData);
+  const response = await api.post("/auth/register", userData);
 
   return response.data;
 };
 
 export const loginUser = async (credentials) => {
-  const response = await api.post('/auth/login', credentials);
+  const response = await api.post("/auth/login", credentials);
 
   return response.data;
 };
 
 export const getCurrentUser = async () => {
-  const response = await api.get('/auth/me');
+  const response = await api.get("/auth/me");
 
   return response.data;
 };
 
 export const logoutUser = () => {
-  localStorage.removeItem('token');
+  const activeAccountId = getActiveAccountId();
+
+  if (activeAccountId) {
+    removeAccount(activeAccountId);
+  }
+
+  localStorage.removeItem("token");
 };
