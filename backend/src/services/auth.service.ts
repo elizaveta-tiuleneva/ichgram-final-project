@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt, { type SignOptions } from "jsonwebtoken";
 import User from "../models/User.js";
+import { getImageUrl } from "./s3.service.js";
 
 interface RegisterData {
   username: string;
@@ -52,7 +53,7 @@ export const registerUser = async (data: RegisterData) => {
     username,
     fullName,
     email,
-    password: hashedPassword
+    password: hashedPassword,
   });
 
   const token = generateToken(String(user._id));
@@ -64,8 +65,8 @@ export const registerUser = async (data: RegisterData) => {
       username: user.username,
       fullName: user.fullName,
       email: user.email,
-      avatar: user.avatar
-    }
+      avatar: await getImageUrl(user.avatar),
+    },
   };
 };
 
@@ -76,8 +77,8 @@ export const loginUser = async (data: LoginData) => {
   const user = await User.findOne({
     $or: [
       { email: identifier },
-      { username: identifier }
-    ]
+      { username: identifier },
+    ],
   }).select("+password");
 
   if (!user) {
@@ -86,7 +87,7 @@ export const loginUser = async (data: LoginData) => {
 
   const isPasswordValid = await bcrypt.compare(
     data.password,
-    user.password
+    user.password,
   );
 
   if (!isPasswordValid) {
@@ -102,7 +103,7 @@ export const loginUser = async (data: LoginData) => {
       username: user.username,
       fullName: user.fullName,
       email: user.email,
-      avatar: user.avatar
-    }
+      avatar: await getImageUrl(user.avatar),
+    },
   };
 };

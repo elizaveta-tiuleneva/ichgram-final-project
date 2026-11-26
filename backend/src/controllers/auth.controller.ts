@@ -2,11 +2,12 @@ import type { Request, Response } from "express";
 import { registerUser, loginUser } from "../services/auth.service.js";
 import User from "../models/User.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
+import { getImageUrl } from "../services/s3.service.js";
 
 // Регистрация
 export const register = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { username, fullName, email, password } = req.body ?? {};
@@ -22,7 +23,7 @@ export const register = async (
       !password
     ) {
       res.status(400).json({
-        message: "All fields are required"
+        message: "All fields are required",
       });
       return;
     }
@@ -30,7 +31,7 @@ export const register = async (
     if (!/^[a-zA-Z0-9._]{3,30}$/.test(username.trim())) {
       res.status(400).json({
         field: "username",
-        message: "Invalid username"
+        message: "Invalid username",
       });
       return;
     }
@@ -38,7 +39,7 @@ export const register = async (
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       res.status(400).json({
         field: "email",
-        message: "Invalid email address"
+        message: "Invalid email address",
       });
       return;
     }
@@ -49,7 +50,8 @@ export const register = async (
     ) {
       res.status(400).json({
         field: "password",
-        message: "Password must contain at least 8 characters and no more than 72 bytes"
+        message:
+          "Password must contain at least 8 characters and no more than 72 bytes",
       });
       return;
     }
@@ -58,7 +60,7 @@ export const register = async (
       username,
       fullName,
       email,
-      password
+      password,
     });
 
     res.status(201).json(result);
@@ -67,7 +69,7 @@ export const register = async (
       if (error.message === "This email is already registered.") {
         res.status(409).json({
           field: "email",
-          message: error.message
+          message: error.message,
         });
         return;
       }
@@ -75,7 +77,7 @@ export const register = async (
       if (error.message === "This username is already taken.") {
         res.status(409).json({
           field: "username",
-          message: error.message
+          message: error.message,
         });
         return;
       }
@@ -94,7 +96,7 @@ export const register = async (
       if (duplicateError.keyPattern?.username) {
         res.status(409).json({
           field: "username",
-          message: "This username is already taken."
+          message: "This username is already taken.",
         });
         return;
       }
@@ -102,13 +104,13 @@ export const register = async (
       if (duplicateError.keyPattern?.email) {
         res.status(409).json({
           field: "email",
-          message: "This email is already registered."
+          message: "This email is already registered.",
         });
         return;
       }
 
       res.status(409).json({
-        message: "Email or username already exists"
+        message: "Email or username already exists",
       });
       return;
     }
@@ -116,7 +118,7 @@ export const register = async (
     console.error(error);
 
     res.status(500).json({
-      message: "Internal server error"
+      message: "Internal server error",
     });
   }
 };
@@ -124,7 +126,7 @@ export const register = async (
 // Авторизация
 export const login = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { identifier, email, password } = req.body ?? {};
@@ -139,14 +141,14 @@ export const login = async (
       Buffer.byteLength(password, "utf8") > 72
     ) {
       res.status(400).json({
-        message: "Username or email and password are required"
+        message: "Username or email and password are required",
       });
       return;
     }
 
     const result = await loginUser({
       identifier: loginIdentifier,
-      password
+      password,
     });
 
     res.status(200).json(result);
@@ -156,7 +158,7 @@ export const login = async (
       error.message === "Invalid username, email or password"
     ) {
       res.status(401).json({
-        message: error.message
+        message: error.message,
       });
       return;
     }
@@ -164,7 +166,7 @@ export const login = async (
     console.error(error);
 
     res.status(500).json({
-      message: "Internal server error"
+      message: "Internal server error",
     });
   }
 };
@@ -172,12 +174,12 @@ export const login = async (
 // Получение текущего пользователя
 export const getMe = async (
   req: AuthRequest,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     if (!req.userId) {
       res.status(401).json({
-        message: "Unauthorized"
+        message: "Unauthorized",
       });
       return;
     }
@@ -187,17 +189,20 @@ export const getMe = async (
 
     if (!user) {
       res.status(404).json({
-        message: "User not found"
+        message: "User not found",
       });
       return;
     }
 
-    res.status(200).json(user);
+    res.status(200).json({
+      ...user.toObject(),
+      avatar: await getImageUrl(user.avatar),
+    });
   } catch (error) {
     console.error(error);
 
     res.status(500).json({
-      message: "Internal server error"
+      message: "Internal server error",
     });
   }
 };
